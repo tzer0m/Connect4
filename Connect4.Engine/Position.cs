@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace Connect4.Engine;
 
 /// <summary>
@@ -96,6 +98,64 @@ public sealed class Position
     }
 
     /// <summary>
+    /// Returns an independent copy of this position.
+    /// </summary>
+    public Position Clone()
+    {
+        return new Position { Current = Current, Mask = Mask, Moves = Moves };
+    }
+
+    /// <summary>
+    /// Returns a number that uniquely identifies this position, used as the transposition table key.
+    /// </summary>
+    public ulong Key()
+    {
+        return Current + Mask;
+    }
+
+    /// <summary>
+    /// Returns true if the player to move can win on their next move.
+    /// </summary>
+    public bool CanWinNext()
+    {
+        ulong possible = (Mask + BottomMask) & BoardMask;
+        return (ComputeWinningPositions(Current, Mask) & possible) != 0;
+    }
+
+    /// <summary>
+    /// Returns a mask of the cells the player to move can play without losing straight away, or 0 if every move loses.
+    /// </summary>
+    public ulong PossibleNonLosingMoves()
+    {
+        // The cell a stone would land on in each column.
+        ulong possible = (Mask + BottomMask) & BoardMask;
+
+        // Cells where the opponent would win if they played there.
+        ulong opponentWins = ComputeWinningPositions(Current ^ Mask, Mask);
+
+        // If the opponent threatens to win, we must block it. With two threats we can only block one, so every move loses.
+        ulong forced = possible & opponentWins;
+        if (forced != 0)
+        {
+            if ((forced & (forced - 1)) != 0)
+                return 0;
+            possible = forced;
+        }
+
+        // Never play directly underneath a cell where the opponent would win, as it lets them play there.
+        return possible & ~(opponentWins >> 1);
+    }
+
+    /// <summary>
+    /// Returns the number of winning cells the player to move would have after playing the move, used to try the most promising moves first.
+    /// </summary>
+    /// <param name="move">A mask with a single bit set at the cell to play.</param>
+    public int MoveScore(ulong move)
+    {
+        return BitOperations.PopCount(ComputeWinningPositions(Current | move, Mask | move));
+    }
+
+    /// <summary>
     /// Finds every empty cell that would complete four in a row for the given stones.
     /// </summary>
     /// <param name="position">The stones to check.</param>
@@ -151,7 +211,7 @@ public sealed class Position
     /// Returns a mask of every cell in a column.
     /// </summary>
     /// <param name="col">The zero-based column index.</param>
-    private static ulong ColumnMask(int col)
+    public static ulong ColumnMask(int col)
     {
         return ((1UL << Height) - 1) << (col * (Height + 1));
     }
