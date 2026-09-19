@@ -53,6 +53,7 @@ public class OpeningBookTests
     /// Every entry for the earliest moves wins, which is slow because these are the hardest positions to solve.
     /// </summary>
     [Test]
+    [Category("Slow")]
     public void BookEarlyEntriesAreWinningMoves()
     {
         Solver solver = new(8388593);
