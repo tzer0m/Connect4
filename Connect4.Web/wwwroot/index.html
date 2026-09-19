@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Connect 4</title>
+    <style>
+        :root {
+            --bg: #f4f5f7;
+            --panel: #ffffff;
+            --border: #d8dce3;
+            --text: #1b1f27;
+            --muted: #5b6472;
+            --board: #1f4fd1;
+            --hole: #f4f5f7;
+            --highlight: rgba(255, 255, 255, 0.25);
+            --computer: #e5484d;
+            --player: #f5c518;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #14171c;
+                --panel: #1c2027;
+                --border: #2c323c;
+                --text: #e8eaed;
+                --muted: #98a1b0;
+                --board: #2a5bd7;
+                --hole: #14171c;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 24px 16px;
+            background: var(--bg);
+            color: var(--text);
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.6rem;
+        }
+
+        .legend {
+            color: var(--muted);
+            font-size: 0.9rem;
+            display: flex;
+            gap: 16px;
+        }
+
+            .legend span::before {
+                content: "";
+                display: inline-block;
+                width: 0.8em;
+                height: 0.8em;
+                border-radius: 50%;
+                margin-right: 6px;
+                background: var(--computer);
+            }
+
+            .legend span.you::before {
+                background: var(--player);
+            }
+
+        #board {
+            width: min(100%, 490px);
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            padding: 10px;
+            background: var(--board);
+            border-radius: 14px;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 8px;
+            padding: 6px 4px;
+            margin: 0;
+            border: 0;
+            border-radius: 10px;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        #board:not(.locked) .column:not(.full):hover,
+        #board:not(.locked) .column:not(.full):focus-visible {
+            background: var(--highlight);
+            outline: none;
+        }
+
+        #board.locked .column, .column.full {
+            cursor: default;
+        }
+
+        .cell {
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background: var(--hole);
+        }
+
+            .cell.computer {
+                background: var(--computer);
+            }
+
+            .cell.player {
+                background: var(--player);
+            }
+
+            .cell.last {
+                box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.55);
+            }
+
+        .bar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            width: min(100%, 490px);
+            justify-content: space-between;
+        }
+
+        #status {
+            font-weight: 600;
+        }
+
+        button.new-game {
+            font: inherit;
+            padding: 6px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--panel);
+            color: var(--text);
+            cursor: pointer;
+        }
+
+            button.new-game:hover {
+                border-color: var(--muted);
+            }
+
+        .log-panel {
+            width: min(100%, 490px);
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 14px;
+        }
+
+            .log-panel h2 {
+                margin: 0 0 6px;
+                font-size: 0.85rem;
+                color: var(--muted);
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+            }
+
+        #log {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            max-height: 200px;
+            overflow-y: auto;
+            scrollbar-width: none;
+            font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+            font-size: 0.85rem;
+        }
+
+        #log .time {
+            color: var(--muted);
+        }
+
+        #log::-webkit-scrollbar {
+            display: none;
+        }
+
+            #log li {
+                padding: 2px 0;
+                white-space: pre-wrap;
+            }
+
+                #log li.computer {
+                    color: var(--computer);
+                }
+
+                #log li.player {
+                    color: var(--player);
+                }
+
+                #log li.divider {
+                    color: var(--muted);
+                }
+
+                #log li.error {
+                    color: #d92d20;
+                }
+    </style>
+</head>
+<body>
+    <h1>Connect 4</h1>
+    <div id="board" aria-label="Connect 4 board"></div>
+    <div class="bar">
+        <div id="status" role="status"></div>
+        <button id="newGame" class="new-game" type="button">New Game</button>
+    </div>
+    <section class="log-panel">
+        <h2>Log</h2>
+        <ol id="log"></ol>
+    </section>
+    <script>
+        const ROWS = 6;
+        const COLS = 7;
+        const boardEl = document.getElementById("board");
+        const statusEl = document.getElementById("status");
+        const logEl = document.getElementById("log");
+        const newGameButton = document.getElementById("newGame");
+
+        // The game state: moves as 1-based column digits, how full each column is, and whether we're waiting or finished.
+        let moves = "";
+        let heights = [];
+        let busy = false;
+        let over = false;
+        let lastCell = null;
+
+        function buildBoard() {
+            boardEl.innerHTML = "";
+            for (let c = 0; c < COLS; c++) {
+                const column = document.createElement("button");
+                column.type = "button";
+                column.className = "column";
+                column.setAttribute("aria-label", "Column " + (c + 1));
+                for (let r = 0; r < ROWS; r++) {
+                    const cell = document.createElement("div");
+                    cell.className = "cell";
+                    column.appendChild(cell);
+                }
+                column.addEventListener("click", () => playerMove(c));
+                boardEl.appendChild(column);
+            }
+        }
+
+        function dropStone(c, who) {
+            const r = heights[c]++;
+            const cell = boardEl.children[c].children[r];
+            cell.classList.add(who);
+            if (lastCell) lastCell.classList.remove("last");
+            cell.classList.add("last");
+            lastCell = cell;
+            if (heights[c] === ROWS) boardEl.children[c].classList.add("full");
+            moves += c + 1;
+        }
+
+        function log(text, kind) {
+            const li = document.createElement("li");
+            if (kind) li.className = kind;
+            const time = document.createElement("span");
+            time.className = "time";
+            time.textContent = new Date().toLocaleTimeString() + "  ";
+            li.append(time, text);
+            logEl.appendChild(li);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function setBusy(isBusy) {
+            busy = isBusy;
+            boardEl.classList.toggle("locked", busy || over);
+        }
+
+        function finish(status) {
+            over = status !== "InProgress";
+            const messages = {
+                InProgress: "Your turn.",
+                ComputerWins: "The computer wins.",
+                PlayerWins: "You win!",
+                Draw: "It's a draw."
+            };
+            statusEl.textContent = messages[status] || status;
+            setBusy(false);
+        }
+
+        async function requestComputerMove() {
+            setBusy(true);
+            statusEl.textContent = "Computer is thinking...";
+            try {
+                const response = await fetch("/api/move", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ moves })
+                });
+                if (!response.ok) throw new Error((await response.text()) || response.statusText);
+                const result = await response.json();
+                if (result.column !== null) {
+                    dropStone(result.column, "computer");
+                    log(`Computer played column ${result.column + 1} (${result.milliseconds} ms)`, "computer");
+                }
+                finish(result.status);
+            } catch (error) {
+                log("Error: " + error.message, "error");
+                statusEl.textContent = "Something went wrong, see the log.";
+                setBusy(false);
+            }
+        }
+
+        function playerMove(c) {
+            if (busy || over || heights[c] >= ROWS) return;
+            dropStone(c, "player");
+            log(`You played column ${c + 1}`, "player");
+            requestComputerMove();
+        }
+
+        function newGame() {
+            if (busy) return;
+            moves = "";
+            heights = Array(COLS).fill(0);
+            over = false;
+            lastCell = null;
+            buildBoard();
+            log("New game", "divider");
+            requestComputerMove();
+        }
+
+        newGameButton.addEventListener("click", newGame);
+        newGame();
+    </script>
+</body>
+</html>
