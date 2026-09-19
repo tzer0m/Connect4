@@ -33,25 +33,51 @@ public sealed class Connect4Engine(int tableSize = 8388593)
                 return col;
         }
 
-        // Otherwise score each move that doesn't lose immediately, and pick the one that is best for us.
+        // Collect the moves that don't lose immediately, and if every move loses, play any legal column.
         ulong safeMoves = position.PossibleNonLosingMoves();
-        int bestColumn = -1;
-        int bestScore = int.MinValue;
+        List<int> candidates = [];
         foreach (int col in ColumnOrder)
         {
-            if ((safeMoves & Position.ColumnMask(col)) == 0)
-                continue;
-            Position child = position.Clone();
-            child.Play(col);
-            int score = -Solver.Solve(child);
+            if ((safeMoves & Position.ColumnMask(col)) != 0)
+                candidates.Add(col);
+        }
+        if (candidates.Count == 0)
+            return ColumnOrder.First(position.CanPlay);
+        if (candidates.Count == 1)
+            return candidates[0];
+
+        // Use the fast win/loss search to find the winning moves, and only consider those if there are any.
+        List<int> winningColumns = candidates.Where(col => ScoreMove(position, col, true) > 0).ToList();
+        if (winningColumns.Count == 1)
+            return winningColumns[0];
+        if (winningColumns.Count > 1)
+            candidates = winningColumns;
+
+        // Score the remaining candidates exactly and pick the best, which is the fastest win.
+        int bestColumn = candidates[0];
+        int bestScore = int.MinValue;
+        foreach (int col in candidates)
+        {
+            int score = ScoreMove(position, col, false);
             if (score > bestScore)
             {
                 bestScore = score;
                 bestColumn = col;
             }
         }
+        return bestColumn;
+    }
 
-        // If every move loses, play any legal column.
-        return bestColumn >= 0 ? bestColumn : ColumnOrder.First(position.CanPlay);
+    /// <summary>
+    /// Scores playing a column for the player to move, using the fast win/loss search if weak is true.
+    /// </summary>
+    /// <param name="position">The position to move from.</param>
+    /// <param name="col">The zero-based column to play.</param>
+    /// <param name="weak">If true, only work out whether the move wins, draws or loses.</param>
+    private int ScoreMove(Position position, int col, bool weak)
+    {
+        Position child = position.Clone();
+        child.Play(col);
+        return -Solver.Solve(child, weak);
     }
 }
