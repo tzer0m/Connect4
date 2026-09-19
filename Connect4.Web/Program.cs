@@ -8,7 +8,6 @@ builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.C
 
 // Create the web application and configure.
 WebApplication app = builder.Build();
-app.UseHttpsRedirection();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.MapPost("/api/move", (MoveRequest request, GameService game) => game.PlayComputerMove(request.Moves));
