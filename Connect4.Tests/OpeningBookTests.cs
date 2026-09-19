@@ -39,6 +39,7 @@ public class OpeningBookTests
     /// Every entry from six moves on wins, either straight away or by leaving the opponent in a lost position.
     /// </summary>
     [Test]
+    [Category("Slow")]
     public void BookEntriesFromSixMovesOnAreWinningMoves()
     {
         Solver solver = new(8388593);

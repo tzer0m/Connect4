@@ -19,6 +19,7 @@ public class RandomPlayTests
     /// <param name="games">The number of games to play.</param>
     /// <param name="seed">The seed for the opponent's random moves, or null to pick a new one each run, which is reported so a failure can be replayed.</param>
     [TestCase(500, null)]
+    [Category("Slow")]
     public void EngineMovingFirstBeatsARandomOpponent(int games, int? seed)
     {
         int actualSeed = seed ?? Random.Shared.Next();
