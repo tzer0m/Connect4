@@ -1,0 +1,19 @@
+name: Test
+
+on:
+  push:
+    branches-ignore:
+      - master
+  pull_request:
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: [self-hosted, tzer0m]
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test
+        run: dotnet test Connect4.Tests/Connect4.Tests.csproj -c Release
