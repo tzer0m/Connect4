@@ -1,5 +1,7 @@
 # Connect 4
 
+![Deploy](https://github.com/tzer0m/Connect4/actions/workflows/deploy.yml/badge.svg)
+
 A Connect 4 engine that plays perfectly and always beats you when it moves first, with a console game and a simple web UI.
 
 Connect 4 is a solved game: with perfect play the first player always wins. The computer moves first, opens in the centre column, and searches to the end of the game, so it never loses a game it starts.
