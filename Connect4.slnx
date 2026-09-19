@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Connect4.Cli/Connect4.Cli.csproj" />
+  <Project Path="Connect4.Engine/Connect4.Engine.csproj" />
+</Solution>
