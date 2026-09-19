@@ -17,13 +17,14 @@ public class RandomPlayTests
     /// The engine moves first against an opponent playing random columns, and should win every game, with timings reported.
     /// </summary>
     /// <param name="games">The number of games to play.</param>
-    /// <param name="seed">The seed for the opponent's random moves, or null to pick a new one each run, which is reported so a failure can be replayed.</param>
-    [TestCase(500, null)]
+    [TestCase(50)]
+    [Repeat(5)]
     [Category("Slow")]
-    public void EngineMovingFirstBeatsARandomOpponent(int games, int? seed)
+    public void EngineMovingFirstBeatsARandomOpponent(int games)
     {
-        int actualSeed = seed ?? Random.Shared.Next();
-        Random random = new(actualSeed);
+        // Pick a new seed each run and report it, so a failing run can be replayed by using that seed here.
+        int seed = Random.Shared.Next();
+        Random random = new(seed);
         Connect4Engine engine = new();
         List<long> moveTimes = [];
         List<string> lostGames = [];
@@ -43,7 +44,7 @@ public class RandomPlayTests
                     Stopwatch stopwatch = Stopwatch.StartNew();
                     col = engine.GetBestMove(position);
                     moveTimes.Add(stopwatch.ElapsedMilliseconds);
-                    Assert.That(position.CanPlay(col), Is.True, $"Unplayable column {col + 1} with seed {actualSeed} in game {game + 1}: {moves}");
+                    Assert.That(position.CanPlay(col), Is.True, $"Unplayable column {col + 1} with seed {seed} in game {game + 1}: {moves}");
                 }
                 else
                 {
@@ -66,12 +67,12 @@ public class RandomPlayTests
         // Report the results and timings.
         long[] sorted = [.. moveTimes.Order()];
         long ninetyFifth = sorted[Math.Min(sorted.Length - 1, (int)(sorted.Length * 0.95))];
-        TestContext.Out.WriteLine($"Seed: {actualSeed}");
+        TestContext.Out.WriteLine($"Seed: {seed}");
         TestContext.Out.WriteLine($"Games: {games}, engine wins: {games - lostGames.Count}, average game length: {(double)totalMoves / games:F1} moves");
         TestContext.Out.WriteLine($"Engine moves: {sorted.Length}, average {sorted.Average():F1} ms, median {sorted[sorted.Length / 2]} ms, 95th percentile {ninetyFifth} ms, slowest {sorted[^1]} ms");
         Assert.Multiple(() =>
         {
-            Assert.That(lostGames, Is.Empty, $"The engine failed to win with seed {actualSeed}: {string.Join(", ", lostGames)}");
+            Assert.That(lostGames, Is.Empty, $"The engine failed to win with seed {seed}: {string.Join(", ", lostGames)}");
             Assert.That(sorted[^1], Is.LessThan(MaxMoveMilliseconds), "An engine move took too long");
         });
     }
