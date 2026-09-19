@@ -9,4 +9,7 @@ if (bookIndex >= 0)
     generator.Generate(depth);
     return;
 }
-Console.WriteLine("Playing isn't written yet. Run with -GenerateOpeningBook <depth> to build the opening book.");
+
+// Otherwise play a game against the computer.
+ConsoleGame game = new();
+game.Play();
