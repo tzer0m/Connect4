@@ -2,4 +2,5 @@
   <Project Path="Connect4.Cli/Connect4.Cli.csproj" />
   <Project Path="Connect4.Engine/Connect4.Engine.csproj" />
   <Project Path="Connect4.Tests/Connect4.Tests.csproj" />
+  <Project Path="Connect4.Web/Connect4.Web.csproj" />
 </Solution>
