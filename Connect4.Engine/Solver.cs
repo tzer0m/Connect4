@@ -30,15 +30,16 @@ public sealed class Solver(int tableSize)
     /// Scores a position for the player to move: positive is a win (bigger means sooner), 0 is a draw and negative is a loss (bigger magnitude means sooner).
     /// </summary>
     /// <param name="position">The position to score.</param>
-    public int Solve(Position position)
+    /// <param name="weak">If true, only work out whether the player to move wins, draws or loses, which is much faster.</param>
+    public int Solve(Position position, bool weak = false)
     {
         // An immediate win is the best possible score.
         if (position.CanWinNext())
             return (Position.Width * Position.Height + 1 - position.Moves) / 2;
 
         // The score can't be lower than the fastest possible loss or higher than the fastest possible win.
-        int min = -(Position.Width * Position.Height - position.Moves) / 2;
-        int max = (Position.Width * Position.Height + 1 - position.Moves) / 2;
+        int min = weak ? -1 : -(Position.Width * Position.Height - position.Moves) / 2;
+        int max = weak ? 1 : (Position.Width * Position.Height + 1 - position.Moves) / 2;
 
         // Narrow the range by repeatedly asking "is the score above this guess?".
         while (min < max)

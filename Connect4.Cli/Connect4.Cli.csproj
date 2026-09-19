@@ -7,4 +7,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Connect4.Engine\Connect4.Engine.csproj" />
+  </ItemGroup>
+
 </Project>
