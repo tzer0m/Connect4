@@ -2,6 +2,7 @@
 
 ![Tests](https://github.com/tzer0m/Connect4/actions/workflows/test.yml/badge.svg)
 ![Deploy](https://github.com/tzer0m/Connect4/actions/workflows/deploy.yml/badge.svg)
+![Dependabot](https://github.com/tzer0m/Connect4/actions/workflows/dependabot/dependabot-updates/badge.svg)
 
 A Connect 4 engine that plays perfectly and always beats you when it moves first, with a console game and a simple web UI.
 
